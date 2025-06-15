@@ -1,0 +1,191 @@
+/* === BODY & FOND === */
+body {
+  margin:0; padding:0;
+  min-height:100vh;
+  font-family:'Inter',Arial,sans-serif;
+  color:#222c38;
+  background:#dc2626;
+  overflow-x:hidden;
+}
+.bg-car-visible {
+  position:fixed; top:0; left:0;
+  width:100vw; height:100vh;
+  background:url('c9cc038b-b945-47e7-bf18-6a62e86cb85b.png') center/cover no-repeat;
+  opacity:0.65; z-index:0; pointer-events:none;
+}
+.bg-red-overlay {
+  position:fixed; top:0; left:0;
+  width:100vw; height:100vh;
+  background:rgba(220,38,38,0.15);
+  z-index:1; pointer-events:none;
+}
+
+/* === HEADER === */
+.crm-header {
+  position:relative; z-index:2;
+  text-align:center; padding:1rem 0;
+}
+.crm-header h1 {
+  margin:0; font-size:2.8rem; color:#fff;
+  text-shadow:1px 3px 12px rgba(185,28,28,0.6);
+}
+
+/* === NAV TABS === */
+.crm-nav {
+  position:relative; z-index:2;
+  text-align:center; margin-bottom:1rem;
+}
+.nav-tab {
+  background:#fff; border:none; border-radius:6px;
+  padding:0.6rem 1.2rem; margin:0 0.4rem;
+  font-size:1rem; font-weight:600; cursor:pointer;
+  transition:background .2s;
+}
+.nav-tab:hover { background:#fee2e2; }
+.nav-active {
+  background:#dc2626!important; color:#fff!important;
+}
+
+/* === MAIN & CRM-CARD === */
+.crm-main { position:relative; z-index:2; padding:0 1rem 2rem; }
+.crm-card {
+  background:rgba(255,255,255,0.95);
+  border-radius:12px; box-shadow:0 8px 32px rgba(0,0,0,0.13);
+  padding:1.2rem; margin-bottom:1.5rem;
+}
+.section-title {
+  margin:0 0 1rem; font-size:1.4rem; color:#b91c1c; font-weight:700;
+}
+.intro { font-size:1rem; color:#444; }
+.hidden { display:none!important; }
+
+/* === BARRE D’ACTIONS === */
+.actions-bar {
+  display:flex; gap:.8rem; flex-wrap:wrap; margin-bottom:1rem;
+}
+.btn-action {
+  background:#2563EB; color:#fff; border:none;
+  padding:.5rem 1rem; border-radius:6px;
+  font-weight:600; cursor:pointer;
+}
+.btn-action:hover { background:#1D4ED8; }
+.btn-add {
+  background:#10B981; color:#fff; border:none;
+  padding:.6rem 1.2rem; border-radius:6px;
+  font-weight:600; cursor:pointer;
+}
+.btn-add:hover { background:#059669; }
+
+/* === TABLEAU & SCROLL === */
+.crm-table-scroll {
+  overflow-x:auto; overflow-y:visible; position:relative;
+}
+.crm-table {
+  width:max-content; min-width:100%;
+  border-collapse:separate; border-spacing:0;
+  table-layout:auto;
+}
+.crm-table th, .crm-table td {
+  white-space:nowrap; padding:.6rem .8rem;
+  text-align:center; border-bottom:1px solid #E5E7EB;
+}
+.crm-table thead th {
+  background:#F3F4F6; font-weight:600; font-size:.95rem;
+}
+
+/* === BADGES & INPUTS === */
+.taux-badge {
+  display:inline-flex; align-items:center; justify-content:center;
+  border-radius:6px; padding:4px 8px; font-weight:700; font-size:.95rem; min-width:40px;
+}
+.taux-badge .sign { margin-left:4px; font-size:.85em; opacity:.8; }
+
+.month-wrapper {
+  display:inline-flex; align-items:center; justify-content:center;
+}
+.month-cell, .name-cell, .prev-cell {
+  width:4.5rem; padding:4px 6px;
+  border:1px solid #ccc; border-radius:4px;
+  text-align:center; font-size:.9rem;
+}
+.month-sign { margin-left:4px; opacity:.8; }
+
+.total-badge {
+  display:inline-flex; align-items:center; justify-content:center;
+  border-radius:12px; padding:6px 12px;
+  font-weight:700; font-size:.95rem; min-width:60px;
+  background:#A3D8F4; color:#0C4A6E;
+}
+.total-badge.yellow { background:#FEF9C3; color:#A16207; }
+.total-badge .sign { margin-left:6px; font-size:.85em; opacity:.85; }
+
+/* === LIGNE DES TOTAUX === */
+.totals-row {
+  background:#fee2e2; font-weight:600;
+}
+
+/* === BOUTONS SUPPRIMER === */
+.btn-delete, .btn-delete-visite {
+  background:none; border:none; font-size:1.2rem; color:#DC2626;
+  cursor:pointer;
+}
+
+/* === FLATPICKR OVERLAY === */
+.flatpickr-calendar { z-index:9999!important; }
+
+/* === MODALES NOTES & INFOS === */
+.modal-overlay {
+  position:fixed; top:0; left:0;
+  width:100%; height:100%;
+  display:none; align-items:center; justify-content:center;
+  z-index:5;
+}
+.modal-overlay:not(.hidden) { display:flex; }
+.modal-container {
+  background:#fff; border-radius:8px;
+  width:90%; max-width:400px; max-height:90%; overflow:auto;
+  box-shadow:0 4px 16px rgba(0,0,0,0.3);
+}
+.modal-header {
+  display:flex; align-items:center; justify-content:space-between;
+  padding:.8rem 1rem; border-bottom:1px solid #ddd;
+}
+.modal-header h3 { margin:0; font-size:1.2rem; color:#b91c1c; }
+.modal-close { background:none; border:none; font-size:1.2rem; cursor:pointer; }
+.modal-list {
+  padding:.8rem 1rem; max-height:200px; overflow-y:auto;
+}
+.note-item {
+  margin-bottom:.5rem; padding:.4rem .6rem;
+  background:#f7f7f7; border-radius:4px;
+}
+.modal-add {
+  display:flex; padding:.8rem 1rem; border-top:1px solid #ddd;
+}
+.modal-add textarea {
+  flex:1; resize:none; padding:.5rem; border:1px solid #ccc; border-radius:4px;
+}
+.modal-add button {
+  margin-left:.6rem; padding:.5rem 1rem; border:none;
+  background:#dc2626; color:#fff; borderRadius:4px; cursor:pointer;
+}
+.modal-body { padding:.8rem 1rem; }
+.info-group {
+  margin-bottom:1rem;
+}
+.info-group label {
+  display:block; margin-bottom:.3rem; font-weight:600;
+}
+.info-group input {
+  width:100%; padding:.4rem .6rem;
+  border:1px solid #ccc; border-radius:4px;
+  margin-bottom:.5rem;
+}
+
+/* === RESPONSIVE === */
+@media (max-width:700px){
+  .crm-card { padding:1rem; }
+  .nav-tab { padding:.5rem .8rem; font-size:.9rem; }
+  .section-title { font-size:1.2rem; }
+  .month-cell, .name-cell, .prev-cell { width:3.5rem; }
+}

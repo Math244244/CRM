@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <title>CRM Concessionnaires</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <!-- CSS -->
+  <link rel="stylesheet" href="style.css" />
+
+  <!-- Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/10.11.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.11.1/firebase-firestore-compat.js"></script>
+
+  <!-- Flatpickr -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css" />
+  <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+</head>
+<body>
+  <div class="bg-car-visible"></div>
+  <div class="bg-red-overlay"></div>
+
+  <header class="crm-header">
+    <h1>CRM Concessionnaires</h1>
+  </header>
+
+  <nav class="crm-nav">
+    <button class="nav-tab nav-active" data-tab="accueil">Accueil</button>
+    <button class="nav-tab"         data-tab="performance">Performance</button>
+    <button class="nav-tab"         data-tab="visites">Visites</button>
+  </nav>
+
+  <main class="crm-main">
+    <!-- ACCUEIL -->
+    <section id="accueil" class="crm-card tab-content">
+      <h2 class="section-title">Bienvenue dans votre CRM</h2>
+      <p class="intro">
+        Gérez, analysez et suivez vos concessionnaires : performances mensuelles, visites, historiques, notes…<br/>
+        <strong>Tout est synchronisé et à jour !</strong>
+      </p>
+    </section>
+
+    <!-- PERFORMANCE -->
+    <section id="performance" class="crm-card tab-content hidden">
+      <h2 class="section-title">Suivi mensuel de performance</h2>
+      <div class="actions-bar">
+        <input type="file" id="import-file" accept=".csv" hidden />
+        <button id="btn-import" class="btn-action">⬆️ Importer CSV</button>
+        <button id="btn-export" class="btn-action">⬇️ Exporter CSV</button>
+        <button id="add-concessionnaire" class="btn-add">➕ Ajouter un concessionnaire</button>
+      </div>
+      <div class="crm-table-scroll">
+        <table class="crm-table">
+          <thead>
+            <tr>
+              <th>#</th><th>ℹ️</th><th>Nom</th><th>Taux %</th>
+              <th>Jan</th><th>Fév</th><th>Mar</th><th>Avr</th>
+              <th>Mai</th><th>Juin</th><th>Juil</th><th>Août</th>
+              <th>Sept</th><th>Oct</th><th>Nov</th><th>Déc</th>
+              <th>Total</th><th>Moyenne</th><th>Préc.</th><th>Var %</th>
+              <th>Notes</th><th>Suppr.</th>
+            </tr>
+          </thead>
+          <tbody id="performance-body"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- VISITES -->
+    <section id="visites" class="crm-card tab-content hidden">
+      <h2 class="section-title">Suivi des visites concessionnaires</h2>
+      <div class="crm-table-scroll">
+        <table class="crm-table">
+          <thead>
+            <tr>
+              <th>Taux %</th><th>Nom</th><th>Moyenne</th>
+              <th>Dernière visite</th><th>Jours depuis</th>
+              <th>AGENDA</th><th>Notes</th><th>Suppr.</th>
+            </tr>
+          </thead>
+          <tbody id="visites-body"></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <!-- MODALE NOTES -->
+  <div id="notes-overlay" class="modal-overlay hidden">
+    <div class="modal-container">
+      <div class="modal-header">
+        <h3 id="notes-title">Notes</h3>
+        <button id="notes-close" class="modal-close">✕</button>
+      </div>
+      <div id="notes-list" class="modal-list"></div>
+      <div class="modal-add">
+        <textarea id="notes-input" placeholder="Écrire une note…"></textarea>
+        <button id="notes-save">Ajouter</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODALE INFOS -->
+  <div id="info-overlay" class="modal-overlay hidden">
+    <div class="modal-container">
+      <div class="modal-header">
+        <h3 id="info-title">Infos Concessionnaire</h3>
+        <button id="info-close" class="modal-close">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="info-group">
+          <label>Propriétaire</label>
+          <input type="text" id="info-owner" placeholder="Nom…" />
+          <input type="email" id="info-owner-email" placeholder="Email…" />
+        </div>
+        <div class="info-group">
+          <label>Directeur de service</label>
+          <input type="text" id="info-dir" placeholder="Nom…" />
+          <input type="email" id="info-dir-email" placeholder="Email…" />
+        </div>
+        <div id="info-df-container"></div>
+        <button id="add-df" class="add-df">➕ Ajouter Directeur financier</button>
+        <div class="info-group">
+          <label>Administration</label>
+          <input type="text" id="info-admin" placeholder="Nom…" />
+          <input type="email" id="info-admin-email" placeholder="Email…" />
+        </div>
+        <button id="info-save" class="modal-save">Sauvegarder</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ── 1. INIT FIREBASE ─────────────────
+    const firebaseConfig = {
+      apiKey: "AIzaSy…",
+      authDomain: "crm-dealer-mathieu.firebaseapp.com",
+      projectId: "crm-dealer-mathieu",
+      storageBucket: "crm-dealer-mathieu.appspot.com",
+      messagingSenderId: "99774542996",
+      appId: "1:99774542996:web:59457e2166c9646a54f081"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+
+    // ── 2. SWITCH ONGLETS ─────────────────
+    document.querySelectorAll('.nav-tab').forEach(btn => {
+      btn.onclick = () => {
+        document.querySelectorAll('.nav-tab').forEach(b=>b.classList.remove('nav-active'));
+        btn.classList.add('nav-active');
+        document.querySelectorAll('.tab-content').forEach(s=>s.classList.add('hidden'));
+        document.getElementById(btn.dataset.tab).classList.remove('hidden');
+      };
+    });
+
+    // ── 3. UTILS ──────────────────────────
+    const moisKeys = [
+      'janvier','fevrier','mars','avril','mai','juin',
+      'juillet','aout','septembre','octobre','novembre','decembre'
+    ];
+    function calcTotal(r){ return moisKeys.reduce((s,m)=>s + (parseFloat(r[m])||0), 0); }
+    function calcMoyenne(r){
+      const vals = Object.values(r||{}).map(v=>parseFloat(v)||0).filter(n=>n>0);
+      return vals.length? vals.reduce((a,b)=>a+b,0)/vals.length : 0;
+    }
+    function badgeTaux(n){
+      n = parseFloat(n)||0;
+      let bg='#D1FAE5', col='#047857';
+      if(n>=40){ bg='#FECACA'; col='#BE123C'; }
+      else if(n>=30){ bg='#FEF9C3'; col='#A16207'; }
+      return `<div class="taux-badge" style="background:${bg};color:${col}">${n}<span class="sign">%</span></div>`;
+    }
+
+    // ── 4. RENDU PERFORMANCE ──────────────
+    async function renderPerformance(){
+      const tbody = document.getElementById('performance-body');
+      tbody.innerHTML = '';
+
+      const snap = await db.collection('concessionnaires').get();
+      let idx=1, sumTot=0, sumMoy=0, cntMoy=0;
+      let monthlySums = Array(12).fill(0);
+
+      //  ── lignes concessions ──
+      snap.docs.forEach(doc=>{
+        const d = doc.data(), r = d.revenus||{};
+        const tot = Math.round(calcTotal(r)), moy = Math.round(calcMoyenne(r));
+        sumTot += tot; if(moy){ sumMoy+=moy; cntMoy++; }
+
+        // cumuls mensuels
+        moisKeys.forEach((m,i)=> monthlySums[i] += parseFloat(r[m])||0 );
+
+        const prev   = d.moyennePrecedente||0;
+        const varPct = prev
+          ? Math.round(((moy - prev)/prev)*1000)/10
+          : 0;
+        const varBg  = varPct>=0?'#D1FAE5':'#FECACA';
+        const varCol = varPct>=0?'#047857':'#BE123C';
+
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${idx++}</td>
+          <td><button class="info-btn" data-id="${doc.id}">ℹ️</button></td>
+          <td><input class="name-cell" data-id="${doc.id}" value="${d.nom||''}"/></td>
+          <td>${badgeTaux(d.tauxReclamation)}</td>
+          ${moisKeys.map(m=>`
+            <td>
+              <div class="month-wrapper">
+                <input type="text" class="month-cell"
+                       data-id="${doc.id}" data-month="${m}"
+                       value="${d.revenus?.[m]? parseFloat(d.revenus[m]).toLocaleString('fr-FR'):''}"/>
+                <span class="sign month-sign">$</span>
+              </div>
+            </td>
+          `).join('')}
+          <td><span class="total-badge">${tot.toLocaleString('fr-FR')}<span class="sign">$</span></span></td>
+          <td><span class="total-badge yellow">${moy.toLocaleString('fr-FR')}<span class="sign">$</span></span></td>
+          <td><input type="number" class="prev-cell" data-id="${doc.id}" value="${prev}"/><span class="sign">$</span></td>
+          <td>
+            <div class="taux-badge" style="background:${varBg};color:${varCol}">
+              ${varPct>=0?'+':''}${varPct}<span class="sign">%</span>
+            </div>
+          </td>
+          <td><button class="notes-btn"  data-id="${doc.id}">📝</button></td>
+          <td><button class="btn-delete" data-id="${doc.id}">❌</button></td>
+        `;
+        tbody.appendChild(tr);
+      });
+
+      //  ── ligne des totaux mensuels ──
+      const moyGlobal = cntMoy? Math.round(sumMoy/cntMoy): 0;
+      const trTot = document.createElement('tr');
+      trTot.className = 'totals-row';
+      let html = `<td colspan="4">Totaux / Moyennes :</td>`;
+      monthlySums.forEach(s=>{
+        html += `<td><span class="total-badge">${Math.round(s).toLocaleString('fr-FR')}<span class="sign">$</span></span></td>`;
+      });
+      html += `
+        <td><span class="total-badge">${sumTot.toLocaleString('fr-FR')}<span class="sign">$</span></span></td>
+        <td><span class="total-badge yellow">${moyGlobal.toLocaleString('fr-FR')}<span class="sign">$</span></span></td>
+        <td colspan="3"></td>
+      `;
+      trTot.innerHTML = html;
+      tbody.appendChild(trTot);
+
+      bindPerfEvents();
+    }
+
+    function bindPerfEvents(){
+      document.querySelectorAll('.info-btn').forEach(b=>b.onclick=()=>openInfo(b.dataset.id));
+      document.querySelectorAll('.notes-btn').forEach(b=>b.onclick=()=>openNotes(b.dataset.id));
+      document.querySelectorAll('.btn-delete').forEach(b=>{
+        b.onclick = ()=> {
+          if(confirm('Supprimer ce concessionnaire ?')){
+            db.collection('concessionnaires').doc(b.dataset.id)
+              .delete().then(renderPerformance);
+          }
+        };
+      });
+      document.querySelectorAll('.name-cell').forEach(i=>
+        i.onchange = ()=> db.collection('concessionnaires').doc(i.dataset.id).update({nom:i.value})
+      );
+      document.querySelectorAll('.month-cell').forEach(i=>{
+        i.onfocus = ()=> i.value = i.value.replace(/\s/g,'');
+        i.onblur  = ()=>{
+          const v = parseFloat(i.value.replace(/\s/g,''))||0;
+          i.value = v? v.toLocaleString('fr-FR'): '';
+        };
+        i.onchange = ()=>{
+          const v = i.value.replace(/\s/g,'')||0;
+          const upd = {}; upd[`revenus.${i.dataset.month}`] = v;
+          db.collection('concessionnaires').doc(i.dataset.id)
+            .update(upd).then(renderPerformance);
+        };
+      });
+      document.querySelectorAll('.prev-cell').forEach(i=>
+        i.onchange = ()=> db.collection('concessionnaires').doc(i.dataset.id)
+          .update({moyennePrecedente: parseFloat(i.value)||0})
+          .then(renderPerformance)
+      );
+    }
+
+    document.getElementById('add-concessionnaire').onclick = ()=> {
+      db.collection('concessionnaires').add({
+        nom:'', tauxReclamation:0, revenus:{}, moyennePrecedente:0, visites:[], notes:[]
+      }).then(renderPerformance);
+    };
+
+    document.getElementById('btn-import').onclick = ()=> document.getElementById('import-file').click();
+    document.getElementById('import-file').onchange = e=>{
+      const f = e.target.files[0]; if(!f) return;
+      const r = new FileReader();
+      r.onload = ()=>{
+        const lines = r.result.split('\n').filter(l=>l.trim());
+        const hdr   = lines.shift().split(';');
+        lines.forEach(ln=>{
+          const vals = ln.split(';'), data={revenus:{}};
+          hdr.forEach((h,i)=>{
+            if(h==='nom') data.nom=vals[i];
+            else if(h==='taux') data.tauxReclamation=parseFloat(vals[i])||0;
+            else if(moisKeys.includes(h)) data.revenus[h]=parseFloat(vals[i])||0;
+          });
+          db.collection('concessionnaires').add(data);
+        });
+        setTimeout(renderPerformance,500);
+      };
+      r.readAsText(f,'ISO-8859-1');
+    };
+    document.getElementById('btn-export').onclick = async ()=>{
+      const snap = await db.collection('concessionnaires').get();
+      const header = ['nom','taux',...moisKeys].join(';');
+      const rows = snap.docs.map(d=>{
+        const o = d.data();
+        return [o.nom||'',o.tauxReclamation||0]
+          .concat(moisKeys.map(m=>o.revenus?.[m]||0))
+          .join(';');
+      });
+      const csv  = [header].concat(rows).join('\r\n');
+      const blob = new Blob([csv],{type:'text/csv'});
+      const url  = URL.createObjectURL(blob);
+      const a    = document.createElement('a');
+      a.href = url; a.download = 'concessionnaires.csv';
+      a.click(); URL.revokeObjectURL(url);
+    };
+
+    // ── 5. RENDU VISITES ─────────────────
+    async function renderVisites(){
+      const tbody = document.getElementById('visites-body');
+      tbody.innerHTML = '';
+      const snap = await db.collection('concessionnaires').get();
+      const docs = snap.docs.map(d=>({id:d.id,data:d.data()}))
+                           .sort((a,b)=>calcMoyenne(b.data.revenus)-calcMoyenne(a.data.revenus));
+
+      docs.forEach(({id,data})=>{
+        const moy     = Math.round(calcMoyenne(data.revenus));
+        const visits  = data.visites||[];
+        const last    = visits.slice(-1)[0]||'';
+        const days    = last? Math.floor((Date.now()-new Date(last))/86400000):'–';
+        let bg='', col='';
+        if(days!=='–'){
+          if(days<60){ bg='#D1FAE5'; col='#047857'; }
+          else if(days<90){ bg='#FEF9C3'; col='#A16207'; }
+          else{ bg='#FECACA'; col='#BE123C'; }
+        }
+
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${badgeTaux(data.tauxReclamation)}</td>
+          <td>${data.nom||''}</td>
+          <td>${moy}<span class="sign">$</span></td>
+          <td class="visit-cell">
+            <button class="btn-today"  data-id="${id}">🕒</button>
+            <button class="btn-calendar">📅</button>
+            <input type="text" class="flatpickr-input" placeholder="YYYY-MM-DD" readonly />
+          </td>
+          <td style="background:${bg};color:${col};">${days}</td>
+          <td><button class="btn-agenda" data-id="${id}">AGENDA</button></td>
+          <td><button class="notes-btn"  data-id="${id}">📝</button></td>
+          <td><button class="btn-delete-visite" data-id="${id}">❌</button></td>
+        `;
+        tbody.appendChild(tr);
+      });
+
+      bindVisiteEvents();
+    }
+
+    function bindVisiteEvents(){
+      document.querySelectorAll('.btn-today').forEach(b=>{
+        b.onclick = async ()=>{
+          const today = new Date().toISOString().slice(0,10);
+          await db.collection('concessionnaires').doc(b.dataset.id)
+            .update({visites: firebase.firestore.FieldValue.arrayUnion(today)});
+          renderVisites();
+        };
+      });
+      document.querySelectorAll('.visit-cell').forEach(cell=>{
+        const inp = cell.querySelector('.flatpickr-input');
+        const fp  = flatpickr(inp,{dateFormat:"Y-m-d",zIndex:9999,
+          onChange:(_,dates)=>{
+            const d = dates[0].toISOString().slice(0,10);
+            db.collection('concessionnaires').doc(cell.querySelector('.btn-today').dataset.id)
+              .update({visites: firebase.firestore.FieldValue.arrayUnion(d)})
+              .then(renderVisites);
+          }
+        });
+        cell.querySelector('.btn-calendar').onclick = ()=> fp.open();
+      });
+      document.querySelectorAll('.btn-agenda').forEach(b=>{
+        b.onclick = ()=>{
+          db.collection('concessionnaires').doc(b.dataset.id).get().then(doc=>{
+            const v    = doc.data().visites||[];
+            const last = v.slice(-1)[0]||new Date().toISOString().slice(0,10);
+            const dt   = last.replace(/-/g,'');
+            const dates = `${dt}T090000Z/${dt}T100000Z`;
+            const title = encodeURIComponent(`Visite – ${doc.data().nom}`);
+            window.open(`https://calendar.google.com/calendar/r/eventedit?text=${title}&dates=${dates}`,'_blank');
+          });
+        };
+      });
+      document.querySelectorAll('#visites-body .notes-btn').forEach(b=>b.onclick = ()=> openNotes(b.dataset.id));
+      document.querySelectorAll('.btn-delete-visite').forEach(b=>{
+        b.onclick = ()=>{
+          if(confirm('Supprimer ce concessionnaire ?')){
+            db.collection('concessionnaires').doc(b.dataset.id)
+              .delete().then(()=>{
+                renderVisites();
+                renderPerformance();
+              });
+          }
+        };
+      });
+    }
+
+    // ── 6. MODALES Notes & Infos ─────────
+    const notesOv = document.getElementById('notes-overlay'),
+          infoOv  = document.getElementById('info-overlay');
+    let currId=null, dfCount=0;
+
+    function openNotes(id){
+      currId = id;
+      document.getElementById('notes-list').innerHTML = '';
+      db.collection('concessionnaires').doc(id).get().then(doc=>{
+        (doc.data().notes||[]).forEach(n=>{
+          const div = document.createElement('div');
+          div.className = 'note-item';
+          div.textContent = `[${n.date}] ${n.text}`;
+          document.getElementById('notes-list').appendChild(div);
+        });
+      });
+      document.getElementById('notes-input').value = '';
+      notesOv.classList.remove('hidden');
+    }
+    document.getElementById('notes-close').onclick = ()=> notesOv.classList.add('hidden');
+    document.getElementById('notes-save').onclick  = ()=>{
+      const txt = document.getElementById('notes-input').value.trim();
+      if(!txt) return;
+      const date = new Date().toISOString().slice(0,10);
+      db.collection('concessionnaires').doc(currId)
+        .update({notes: firebase.firestore.FieldValue.arrayUnion({date,text:txt})})
+        .then(()=>{
+          notesOv.classList.add('hidden');
+          renderPerformance();
+          renderVisites();
+        });
+    };
+
+    function appendDF(num,name='',email=''){
+      const cont = document.getElementById('info-df-container');
+      const div  = document.createElement('div');
+      div.className = 'info-group df-group';
+      div.innerHTML = `
+        <label>Directeur financier #${num}</label>
+        <input type="text"  class="df-name"  placeholder="Nom…"  value="${name}"/>
+        <input type="email" class="df-email" placeholder="Email…" value="${email}"/>
+      `;
+      cont.appendChild(div);
+    }
+
+    function openInfo(id){
+      currId = id;
+      db.collection('concessionnaires').doc(id).get().then(doc=>{
+        const d = doc.data()||{};
+        document.getElementById('info-owner').value       = d.owner||'';
+        document.getElementById('info-owner-email').value = d.ownerEmail||'';
+        document.getElementById('info-dir').value         = d.dir||'';
+        document.getElementById('info-dir-email').value   = d.dirEmail||'';
+        const fin  = Array.isArray(d.financiers)? d.financiers : [];
+        document.getElementById('info-df-container').innerHTML = '';
+        dfCount = 0;
+        fin.forEach(f=> appendDF(++dfCount,f.name,f.email));
+        if(dfCount===0) appendDF(++dfCount,'','');
+        document.getElementById('info-admin').value       = d.admin||'';
+        document.getElementById('info-admin-email').value = d.adminEmail||'';
+        document.getElementById('info-title').textContent = 'Infos – '+(d.nom||'');
+      });
+      infoOv.classList.remove('hidden');
+    }
+    document.getElementById('info-close').onclick = ()=> infoOv.classList.add('hidden');
+    document.getElementById('add-df').onclick    = ()=> appendDF(++dfCount,'','');
+    document.getElementById('info-save').onclick = ()=>{
+      const data = {
+        owner:      document.getElementById('info-owner').value.trim(),
+        ownerEmail: document.getElementById('info-owner-email').value.trim(),
+        dir:        document.getElementById('info-dir').value.trim(),
+        dirEmail:   document.getElementById('info-dir-email').value.trim(),
+        admin:      document.getElementById('info-admin').value.trim(),
+        adminEmail: document.getElementById('info-admin-email').value.trim()
+      };
+      const fins=[];
+      document.querySelectorAll('.df-group').forEach(g=>{
+        const nm = g.querySelector('.df-name').value.trim();
+        const em = g.querySelector('.df-email').value.trim();
+        if(nm||em) fins.push({name:nm,email:em});
+      });
+      data.financiers=fins;
+      db.collection('concessionnaires').doc(currId)
+        .update(data).then(()=>{
+          infoOv.classList.add('hidden');
+          renderPerformance();
+        });
+    };
+
+    // ── INIT ──────────────────────────────
+    window.addEventListener('DOMContentLoaded', ()=>{
+      renderPerformance();
+      renderVisites();
+    });
+  </script>
+</body>
+</html>
